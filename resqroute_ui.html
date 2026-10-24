@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ResQRoute</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0a0d14;
+      background-image:
+        linear-gradient(rgba(5,8,18,0.72), rgba(5,8,18,0.82)),
+        url('static/ambulance_bg.jpg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 32px 24px;
+    }
+
+    .container { width: 100%; max-width: 520px; }
+
+    /* Logo */
+    .logo { text-align: center; margin-bottom: 28px; }
+    .logo h1 { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.5px; }
+    .logo span { color: #ef4444; }
+    .logo p { font-size: 0.85rem; color: #64748b; margin-top: 4px; }
+
+    /* Card */
+    .card {
+      background: rgba(15, 20, 35, 0.75);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    /* Form */
+    .field { margin-bottom: 14px; }
+    label {
+      display: block; font-size: 0.75rem; font-weight: 600;
+      color: #94a3b8; margin-bottom: 6px;
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    select {
+      width: 100%; padding: 11px 14px;
+      background: rgba(5, 8, 18, 0.6); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; color: #e2e8f0;
+      font-family: inherit; font-size: 0.9rem;
+      cursor: pointer; outline: none; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center;
+      transition: border-color 0.2s;
+    }
+    select:focus { border-color: #ef4444; }
+    select option { background: #1a1f2e; }
+
+    button {
+      width: 100%; margin-top: 4px; padding: 12px;
+      background: #ef4444; color: #fff; border: none;
+      border-radius: 10px; font-family: inherit;
+      font-size: 0.95rem; font-weight: 600; cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+    }
+    button:hover { background: #dc2626; transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .error {
+      margin-top: 10px; padding: 10px 14px;
+      background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 8px; color: #ef4444; font-size: 0.85rem; display: none;
+    }
+
+    /* Stats */
+    .stats {
+      display: grid; grid-template-columns: repeat(3,1fr);
+      gap: 10px; margin-bottom: 16px;
+    }
+    .stat {
+      background: rgba(15, 20, 35, 0.75); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px; padding: 14px 10px; text-align: center;
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    }
+    .stat-val { font-size: 1.3rem; font-weight: 700; margin-bottom: 2px; }
+    .stat-val.red   { color: #ef4444; }
+    .stat-val.amber { color: #f59e0b; }
+    .stat-val.green { color: #10b981; }
+    .stat-lbl { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* Section title */
+    .section-title {
+      font-size: 0.72rem; font-weight: 600; color: #64748b;
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px;
+    }
+
+    /* Shortest route steps */
+    .step { display: flex; align-items: flex-start; gap: 12px; }
+    .step-left { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; width: 16px; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; background: #64748b; flex-shrink: 0; }
+    .dot.origin { background: #ef4444; }
+    .dot.dest   { background: #10b981; }
+    .dot.mid    { background: #f59e0b; }
+    .connector  { width: 2px; height: 22px; background: #2d3347; margin: 3px 0; }
+    .step-name  { font-size: 0.9rem; font-weight: 500; color: #e2e8f0; line-height: 1.2; }
+    .step-tag   { font-size: 0.65rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* All routes */
+    .all-routes { display: flex; flex-direction: column; gap: 10px; }
+
+    .route-item {
+      background: rgba(10, 14, 25, 0.7); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px; padding: 12px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; transition: border-color 0.2s;
+    }
+    .route-item.shortest {
+      border-color: rgba(239,68,68,0.5);
+      background: rgba(239,68,68,0.05);
+    }
+    .route-path {
+      font-size: 0.85rem; color: #cbd5e1; font-weight: 500;
+      flex: 1; line-height: 1.5;
+    }
+    .route-path .arrow { color: #475569; margin: 0 4px; }
+    .route-meta {
+      text-align: right; flex-shrink: 0;
+    }
+    .route-dist {
+      font-size: 0.95rem; font-weight: 700; color: #e2e8f0;
+    }
+    .route-hops {
+      font-size: 0.7rem; color: #64748b; margin-top: 2px;
+    }
+    .badge-shortest {
+      display: inline-block; font-size: 0.6rem; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      background: rgba(239,68,68,0.15); color: #ef4444;
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 999px; padding: 2px 7px; margin-top: 4px;
+    }
+
+    .results { display: none; }
+
+    @media(max-width:480px) {
+      .stats { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="logo">
+    <h1>🚑 ResQ<span>Route</span></h1>
+    <p>Ambulance Shortest Path Finder</p>
+  </div>
+
+  <!-- Form -->
+  <div class="card">
+    <div class="field">
+      <label>From</label>
+      <select id="start"><option value="">Select starting point</option></select>
+    </div>
+    <div class="field">
+      <label>To</label>
+      <select id="end"><option value="">Select destination</option></select>
+    </div>
+    <button id="findBtn" onclick="findRoute()">Find Route</button>
+    <div class="error" id="error"></div>
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="results">
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat"><div class="stat-val red"   id="statDist">—</div><div class="stat-lbl">Distance</div></div>
+      <div class="stat"><div class="stat-val amber" id="statTime">—</div><div class="stat-lbl">ETA (min)</div></div>
+      <div class="stat"><div class="stat-val green" id="statHops">—</div><div class="stat-lbl">Stops</div></div>
+    </div>
+
+    <!-- Shortest Route -->
+    <div class="card">
+      <div class="section-title">⚡ Shortest Route</div>
+      <div id="routeSteps"></div>
+    </div>
+
+    <!-- All Routes -->
+    <div class="card">
+      <div class="section-title" id="allRoutesTitle">🗺 All Possible Routes</div>
+      <div class="all-routes" id="allRoutes"></div>
+    </div>
+
+  </div>
+
+</div>
+<script>
+  const graph = {
+    "Ambulance Station": [["Main Road", 4],  ["City Road", 2]],
+    "Main Road":         [["Ambulance Station", 4], ["Hospital Road", 3]],
+    "City Road":         [["Ambulance Station", 2], ["Hospital Road", 5]],
+    "Hospital Road":     [["Main Road", 3],  ["City Road", 5], ["City Hospital", 2]],
+    "City Hospital":     [["Hospital Road", 2]]
+  };
+  const locations = Object.keys(graph);
+
+  // Populate dropdowns
+  ["start","end"].forEach(id => {
+    const sel = document.getElementById(id);
+    locations.forEach(loc => {
+      const o = document.createElement("option");
+      o.value = o.textContent = loc;
+      sel.appendChild(o);
+    });
+  });
+
+  // Dijkstra
+  function dijkstra(start, end) {
+    const dist = {}, prev = {}, visited = new Set();
+    locations.forEach(l => { dist[l] = Infinity; prev[l] = null; });
+    dist[start] = 0;
+    while (visited.size < locations.length) {
+      let cur = null;
+      for (const l of locations)
+        if (!visited.has(l) && (cur === null || dist[l] < dist[cur])) cur = l;
+      if (!cur || dist[cur] === Infinity) break;
+      visited.add(cur);
+      if (cur === end) break;
+      for (const [nb, w] of graph[cur])
+        if (dist[cur] + w < dist[nb]) { dist[nb] = dist[cur] + w; prev[nb] = cur; }
+    }
+    const path = [];
+    let c = end;
+    while (c) { path.unshift(c); c = prev[c]; }
+    return { distance: dist[end], path };
+  }
+
+  // DFS — all routes
+  function findAllRoutes(start, end) {
+    const all = [];
+    function dfs(cur, dest, visited, path, cost) {
+      if (cur === dest) { all.push({ path: [...path], cost }); return; }
+      for (const [nb, w] of graph[cur]) {
+        if (!visited.has(nb)) {
+          visited.add(nb);
+          path.push(nb);
+          dfs(nb, dest, visited, path, cost + w);
+          path.pop();
+          visited.delete(nb);
+        }
+      }
+    }
+    dfs(start, end, new Set([start]), [start], 0);
+    all.sort((a, b) => a.cost - b.cost);
+    return all;
+  }
+
+  function findRoute() {
+    const start = document.getElementById("start").value;
+    const end   = document.getElementById("end").value;
+    const errEl = document.getElementById("error");
+    errEl.style.display = "none";
+
+    if (!start || !end)  return showError("Please select both locations.");
+    if (start === end)   return showError("Start and destination must be different.");
+
+    const btn = document.getElementById("findBtn");
+    btn.textContent = "Calculating…";
+    btn.disabled = true;
+
+    setTimeout(() => {
+      const { distance, path } = dijkstra(start, end);
+      btn.textContent = "Find Route";
+      btn.disabled = false;
+
+      if (distance === Infinity) return showError("No route found.");
+
+      // Stats
+      document.getElementById("statDist").textContent = distance + " km";
+      document.getElementById("statTime").textContent = ((distance / 40) * 60).toFixed(1);
+      document.getElementById("statHops").textContent = path.length - 1;
+
+      // Shortest route steps
+      const stepsEl = document.getElementById("routeSteps");
+      stepsEl.innerHTML = "";
+      path.forEach((loc, i) => {
+        const isFirst = i === 0, isLast = i === path.length - 1;
+        const dotCls = isFirst ? "dot origin" : isLast ? "dot dest" : "dot mid";
+        const tag    = isFirst ? "Origin" : isLast ? "Destination" : "Waypoint";
+        const div = document.createElement("div");
+        div.className = "step";
+        div.innerHTML = `
+          <div class="step-left">
+            <div class="${dotCls}"></div>
+            ${!isLast ? '<div class="connector"></div>' : ''}
+          </div>
+          <div>
+            <div class="step-name">${loc}</div>
+            <div class="step-tag">${tag}</div>
+          </div>`;
+        stepsEl.appendChild(div);
+      });
+
+      // All routes (DFS)
+      const allRoutes = findAllRoutes(start, end);
+      const allEl = document.getElementById("allRoutes");
+      allEl.innerHTML = "";
+      document.getElementById("allRoutesTitle").textContent =
+        `🗺 All Possible Routes (${allRoutes.length} found)`;
+
+      allRoutes.forEach(({ path: rPath, cost }, idx) => {
+        const isShortest = cost === distance;
+        const div = document.createElement("div");
+        div.className = "route-item" + (isShortest ? " shortest" : "");
+        div.innerHTML = `
+          <div class="route-path">
+            ${rPath.map((n, i) => i === 0 ? `<strong>${n}</strong>` : `<span class="arrow">→</span>${n}`).join("")}
+          </div>
+          <div class="route-meta">
+            <div class="route-dist">${cost} km</div>
+            <div class="route-hops">${rPath.length - 1} hop${rPath.length - 1 !== 1 ? 's' : ''}</div>
+            ${isShortest ? '<div class="badge-shortest">Shortest</div>' : ''}
+          </div>`;
+        allEl.appendChild(div);
+      });
+
+      // Show results
+      const res = document.getElementById("results");
+      res.style.display = "block";
+      res.style.opacity = "0";
+      res.style.transform = "translateY(16px)";
+      requestAnimationFrame(() => {
+        res.style.transition = "opacity 0.4s ease, transform 0.4s ease";
+        res.style.opacity = "1";
+        res.style.transform = "translateY(0)";
+      });
+    }, 200);
+  }
+
+  function showError(msg) {
+    const el = document.getElementById("error");
+    el.textContent = msg;
+    el.style.display = "block";
+  }
+</script>
+</body>
+</html>
